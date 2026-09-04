@@ -4,10 +4,25 @@ import { get } from '../services/api'
 export default function Dashboard() {
   const [livros, setLivros] = useState([])
   const [emprestimos, setEmprestimos] = useState([])
+  const [erro, setErro] = useState('')
 
   useEffect(() => {
-    get('/livros').then(setLivros)
-    get('/emprestimos').then(setEmprestimos)
+    let ativo = true
+
+    Promise.all([get('/livros'), get('/emprestimos')])
+      .then(([livrosCarregados, emprestimosCarregados]) => {
+        if (ativo) {
+          setLivros(livrosCarregados)
+          setEmprestimos(emprestimosCarregados)
+        }
+      })
+      .catch((error) => {
+        if (ativo) setErro(error.message)
+      })
+
+    return () => {
+      ativo = false
+    }
   }, [])
 
   const totalLivros = livros.length
@@ -17,6 +32,7 @@ export default function Dashboard() {
   return (
     <div>
       <h1>Painel da Biblioteca</h1>
+      {erro && <p className="error-message" role="alert">{erro}</p>}
       <div className="grid">
         <div className="card">
           <div>Titulos cadastrados</div>

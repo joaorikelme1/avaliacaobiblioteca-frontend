@@ -4,23 +4,33 @@ import { get, del } from '../services/api'
 
 export default function ListaLivros() {
   const [livros, setLivros] = useState([])
+  const [erro, setErro] = useState('')
 
   useEffect(() => {
-    carregar()
+    carregar().catch((error) => setErro(error.message))
   }, [])
 
-  function carregar() {
-    get('/livros').then(setLivros)
+  async function carregar() {
+    const livrosCarregados = await get('/livros')
+    setLivros(livrosCarregados)
   }
 
-  function excluir(id) {
+  async function excluir(id) {
     // BUG: nao pede confirmacao antes de excluir
-    del(`/livros/${id}`).then(carregar)
+    setErro('')
+
+    try {
+      await del(`/livros/${id}`)
+      await carregar()
+    } catch (error) {
+      setErro(error.message)
+    }
   }
 
   return (
     <div>
       <h1>Livros</h1>
+      {erro && <p className="error-message" role="alert">{erro}</p>}
       <table>
         <thead>
           <tr>

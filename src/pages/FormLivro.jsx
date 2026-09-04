@@ -11,12 +11,14 @@ export default function FormLivro() {
 
   useEffect(() => {
     if (id) {
-      get(`/livros/${id}`).then((livro) => {
-        setForm(livro)
-        setQuantidadeEmprestada(
-          Math.max(0, Number(livro.quantidadeTotal) - Number(livro.quantidadeDisponivel))
-        )
-      })
+      get(`/livros/${id}`)
+        .then((livro) => {
+          setForm(livro)
+          setQuantidadeEmprestada(
+            Math.max(0, Number(livro.quantidadeTotal) - Number(livro.quantidadeDisponivel))
+          )
+        })
+        .catch((error) => setErro(error.message))
     }
   }, [id])
 
@@ -25,7 +27,7 @@ export default function FormLivro() {
     setErro('')
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     const titulo = String(form.titulo ?? '').trim()
@@ -55,10 +57,18 @@ export default function FormLivro() {
       quantidadeTotal,
     }
 
-    if (id) {
-      put(`/livros/${id}`, dadosLivro).then(() => navigate('/livros'))
-    } else {
-      post('/livros', dadosLivro).then(() => navigate('/livros'))
+    setErro('')
+
+    try {
+      if (id) {
+        await put(`/livros/${id}`, dadosLivro)
+      } else {
+        await post('/livros', dadosLivro)
+      }
+
+      navigate('/livros')
+    } catch (error) {
+      setErro(error.message)
     }
   }
 
