@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import Feedback from '../components/Feedback'
 import { get, post, put } from '../services/api'
 
 export default function FormLivro() {
@@ -8,9 +9,15 @@ export default function FormLivro() {
   const [form, setForm] = useState({ titulo: '', autor: '', isbn: '', quantidadeTotal: 1 })
   const [quantidadeEmprestada, setQuantidadeEmprestada] = useState(0)
   const [erro, setErro] = useState('')
+  const [erroCarregamento, setErroCarregamento] = useState('')
+  const [carregando, setCarregando] = useState(Boolean(id))
+  const [salvando, setSalvando] = useState(false)
 
   useEffect(() => {
     if (id) {
+      setCarregando(true)
+      setErroCarregamento('')
+
       get(`/livros/${id}`)
         .then((livro) => {
           setForm(livro)
@@ -18,7 +25,10 @@ export default function FormLivro() {
             Math.max(0, Number(livro.quantidadeTotal) - Number(livro.quantidadeDisponivel))
           )
         })
-        .catch((error) => setErro(error.message))
+        .catch((error) => {
+          setErroCarregamento(error.message || 'Não foi possível carregar o livro.')
+        })
+        .finally(() => setCarregando(false))
     }
   }, [id])
 
@@ -58,6 +68,7 @@ export default function FormLivro() {
     }
 
     setErro('')
+    setSalvando(true)
 
     try {
       if (id) {
@@ -68,26 +79,47 @@ export default function FormLivro() {
 
       navigate('/livros')
     } catch (error) {
-      setErro(error.message)
+      setErro(error.message || 'Não foi possível salvar o livro.')
+    } finally {
+      setSalvando(false)
     }
+  }
+
+  if (carregando) {
+    return (
+      <div>
+        <h1>Editar Livro</h1>
+        <Feedback type="loading">Carregando dados do livro...</Feedback>
+      </div>
+    )
+  }
+
+  if (erroCarregamento) {
+    return (
+      <div>
+        <h1>Editar Livro</h1>
+        <Feedback type="error">{erroCarregamento}</Feedback>
+        <button type="button" className="secondary" onClick={() => navigate('/livros')}>Voltar</button>
+      </div>
+    )
   }
 
   return (
     <div>
       <h1>{id ? 'Editar Livro' : 'Novo Livro'}</h1>
-      <form className="card" onSubmit={handleSubmit}>
-        {erro && <p className="form-error" role="alert">{erro}</p>}
+      <form className="card" onSubmit={handleSubmit} aria-busy={salvando}>
+        {erro && <Feedback type="error">{erro}</Feedback>}
         <div className="field">
           <label>Titulo</label>
-          <input name="titulo" value={form.titulo} onChange={handleChange} required />
+          <input name="titulo" value={form.titulo ?? ''} onChange={handleChange} required />
         </div>
         <div className="field">
           <label>Autor</label>
-          <input name="autor" value={form.autor} onChange={handleChange} required />
+          <input name="autor" value={form.autor ?? ''} onChange={handleChange} required />
         </div>
         <div className="field">
           <label>ISBN</label>
-          <input name="isbn" value={form.isbn} onChange={handleChange} />
+          <input name="isbn" value={form.isbn ?? ''} onChange={handleChange} />
         </div>
         <div className="field">
           <label>Quantidade total</label>
@@ -101,7 +133,9 @@ export default function FormLivro() {
             required
           />
         </div>
-        <button type="submit">Salvar</button>
+        <button type="submit" disabled={salvando}>
+          {salvando ? 'Salvando...' : 'Salvar'}
+        </button>
       </form>
     </div>
   )
