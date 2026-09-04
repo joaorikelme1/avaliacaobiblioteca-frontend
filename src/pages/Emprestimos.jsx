@@ -25,7 +25,7 @@ export default function Emprestimos() {
 
   function devolver(id) {
     // aponta pro endpoint de devolucao (que no backend esta como GET, veja o bug la)
-    fetch(`http://localhost:3000/api/emprestimos/${id}/devolver`).then(carregar)
+    get(`/emprestimos/${id}/devolver`).then(carregar)
   }
 
   return (
