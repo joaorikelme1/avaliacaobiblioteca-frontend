@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import Feedback from '../components/Feedback'
 import { get } from '../services/api'
 
 export default function Dashboard() {
   const [livros, setLivros] = useState([])
   const [emprestimos, setEmprestimos] = useState([])
   const [erro, setErro] = useState('')
+  const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
     let ativo = true
@@ -17,7 +19,10 @@ export default function Dashboard() {
         }
       })
       .catch((error) => {
-        if (ativo) setErro(error.message)
+        if (ativo) setErro(error.message || 'Não foi possível carregar o painel.')
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false)
       })
 
     return () => {
@@ -32,21 +37,24 @@ export default function Dashboard() {
   return (
     <div>
       <h1>Painel da Biblioteca</h1>
-      {erro && <p className="error-message" role="alert">{erro}</p>}
-      <div className="grid">
-        <div className="card">
-          <div>Titulos cadastrados</div>
-          <div className="stat">{totalLivros}</div>
+      {carregando && <Feedback type="loading">Carregando dados do painel...</Feedback>}
+      {erro && <Feedback type="error">{erro}</Feedback>}
+      {!carregando && !erro && (
+        <div className="grid">
+          <div className="card">
+            <div>Titulos cadastrados</div>
+            <div className="stat">{totalLivros}</div>
+          </div>
+          <div className="card">
+            <div>Exemplares disponiveis</div>
+            <div className="stat">{disponiveis}</div>
+          </div>
+          <div className="card">
+            <div>Emprestimos ativos</div>
+            <div className="stat">{ativos}</div>
+          </div>
         </div>
-        <div className="card">
-          <div>Exemplares disponiveis</div>
-          <div className="stat">{disponiveis}</div>
-        </div>
-        <div className="card">
-          <div>Emprestimos ativos</div>
-          <div className="stat">{ativos}</div>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -23,6 +23,7 @@ button {
 }
 button.secondary { background: #64748b; }
 button.danger { background: #dc2626; }
+button:disabled { cursor: not-allowed; opacity: .6; }
 input, select {
   padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%;
 }
@@ -31,4 +32,20 @@ input, select {
 .stat { font-size: 28px; font-weight: 700; }
 form .field { margin-bottom: 14px; }
 label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 14px; }
-.form-error, .error-message { color: #b91c1c; margin-top: 0; font-weight: 600; }
+.feedback {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; margin-bottom: 16px; border: 1px solid; border-radius: 8px;
+  font-weight: 600;
+}
+.feedback-error { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
+.feedback-info, .feedback-loading { color: #1e40af; background: #eff6ff; border-color: #bfdbfe; }
+.feedback-loading::before {
+  content: ''; width: 16px; height: 16px; flex: 0 0 16px;
+  border: 2px solid #93c5fd; border-top-color: #2563eb; border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+.empty-row td { padding: 28px 12px; color: #64748b; text-align: center; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .feedback-loading::before { animation: none; }
+}

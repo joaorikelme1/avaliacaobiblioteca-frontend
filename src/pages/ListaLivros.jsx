@@ -1,37 +1,52 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import Feedback from '../components/Feedback'
 import { get, del } from '../services/api'
 
 export default function ListaLivros() {
   const [livros, setLivros] = useState([])
   const [erro, setErro] = useState('')
+  const [carregando, setCarregando] = useState(true)
+  const [excluindoId, setExcluindoId] = useState(null)
 
   useEffect(() => {
-    carregar().catch((error) => setErro(error.message))
+    carregar().catch((error) => {
+      setErro(error.message || 'Não foi possível carregar os livros.')
+    })
   }, [])
 
   async function carregar() {
-    const livrosCarregados = await get('/livros')
-    setLivros(livrosCarregados)
+    setCarregando(true)
+
+    try {
+      const livrosCarregados = await get('/livros')
+      setLivros(livrosCarregados)
+    } finally {
+      setCarregando(false)
+    }
   }
 
   async function excluir(id) {
     // BUG: nao pede confirmacao antes de excluir
     setErro('')
+    setExcluindoId(id)
 
     try {
       await del(`/livros/${id}`)
       await carregar()
     } catch (error) {
-      setErro(error.message)
+      setErro(error.message || 'Não foi possível excluir o livro.')
+    } finally {
+      setExcluindoId(null)
     }
   }
 
   return (
     <div>
       <h1>Livros</h1>
-      {erro && <p className="error-message" role="alert">{erro}</p>}
-      <table>
+      {erro && <Feedback type="error">{erro}</Feedback>}
+      {carregando && <Feedback type="loading">Carregando livros...</Feedback>}
+      {!carregando && (!erro || livros.length > 0) && <table>
         <thead>
           <tr>
             <th>Titulo</th>
@@ -42,9 +57,12 @@ export default function ListaLivros() {
           </tr>
         </thead>
         <tbody>
-          {livros.map((livro, index) => (
-            // BUG: key usando o indice do array em vez do id do livro
-            <tr key={index}>
+          {livros.length === 0 ? (
+            <tr className="empty-row">
+              <td colSpan="5">Nenhum livro cadastrado.</td>
+            </tr>
+          ) : livros.map((livro) => (
+            <tr key={livro.id}>
               <td>{livro.titulo}</td>
               <td>{livro.autor}</td>
               <td>{livro.quantidadeDisponivel}</td>
@@ -52,12 +70,19 @@ export default function ListaLivros() {
               <td>
                 <Link to={`/livros/${livro.id}/editar`}>Editar</Link>
                 {' '}
-                <button className="danger" onClick={() => excluir(livro.id)}>Excluir</button>
+                <button
+                  className="danger"
+                  onClick={() => excluir(livro.id)}
+                  disabled={excluindoId !== null}
+                >
+                  {excluindoId === livro.id ? 'Excluindo...' : 'Excluir'}
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      }
     </div>
   )
 }
