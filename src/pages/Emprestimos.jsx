@@ -5,6 +5,7 @@ export default function Emprestimos() {
   const [emprestimos, setEmprestimos] = useState([])
   const [livros, setLivros] = useState([])
   const [form, setForm] = useState({ livroId: '', nomeUsuario: '' })
+  const [erro, setErro] = useState('')
 
   useEffect(() => {
     carregar()
@@ -17,7 +18,22 @@ export default function Emprestimos() {
 
   function handleSubmit(e) {
     e.preventDefault()
-    post('/emprestimos', form)
+
+    const livroId = Number(form.livroId)
+    const nomeUsuario = String(form.nomeUsuario ?? '').trim()
+
+    if (!Number.isInteger(livroId) || livroId <= 0) {
+      setErro('Selecione um livro.')
+      return
+    }
+
+    if (!nomeUsuario) {
+      setErro('Informe o nome do usuário.')
+      return
+    }
+
+    setErro('')
+    post('/emprestimos', { livroId, nomeUsuario })
     // BUG: nao espera a resposta (sem then/await) antes de recarregar a lista,
     // entao o emprestimo recem-criado pode nao aparecer ainda
     carregar()
@@ -32,11 +48,16 @@ export default function Emprestimos() {
     <div>
       <h1>Emprestimos</h1>
       <form className="card" onSubmit={handleSubmit}>
+        {erro && <p className="form-error" role="alert">{erro}</p>}
         <div className="field">
           <label>Livro</label>
           <select
             value={form.livroId}
-            onChange={(e) => setForm({ ...form, livroId: e.target.value })}
+            onChange={(e) => {
+              setForm({ ...form, livroId: e.target.value })
+              setErro('')
+            }}
+            required
           >
             <option value="">Selecione...</option>
             {livros.map((l) => (
@@ -48,7 +69,11 @@ export default function Emprestimos() {
           <label>Nome do usuario</label>
           <input
             value={form.nomeUsuario}
-            onChange={(e) => setForm({ ...form, nomeUsuario: e.target.value })}
+            onChange={(e) => {
+              setForm({ ...form, nomeUsuario: e.target.value })
+              setErro('')
+            }}
+            required
           />
         </div>
         <button type="submit">Emprestar</button>
