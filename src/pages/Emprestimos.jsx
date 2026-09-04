@@ -8,15 +8,30 @@ export default function Emprestimos() {
   const [erro, setErro] = useState('')
 
   useEffect(() => {
-    carregar()
-    get('/livros').then(setLivros)
+    let ativo = true
+
+    Promise.all([get('/emprestimos'), get('/livros')])
+      .then(([emprestimosCarregados, livrosCarregados]) => {
+        if (ativo) {
+          setEmprestimos(emprestimosCarregados)
+          setLivros(livrosCarregados)
+        }
+      })
+      .catch((error) => {
+        if (ativo) setErro(error.message)
+      })
+
+    return () => {
+      ativo = false
+    }
   }, [])
 
-  function carregar() {
-    get('/emprestimos').then(setEmprestimos)
+  async function carregar() {
+    const emprestimosCarregados = await get('/emprestimos')
+    setEmprestimos(emprestimosCarregados)
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     const livroId = Number(form.livroId)
@@ -33,22 +48,33 @@ export default function Emprestimos() {
     }
 
     setErro('')
-    post('/emprestimos', { livroId, nomeUsuario })
-    // BUG: nao espera a resposta (sem then/await) antes de recarregar a lista,
-    // entao o emprestimo recem-criado pode nao aparecer ainda
-    carregar()
+
+    try {
+      await post('/emprestimos', { livroId, nomeUsuario })
+      await carregar()
+      setForm({ livroId: '', nomeUsuario: '' })
+    } catch (error) {
+      setErro(error.message)
+    }
   }
 
-  function devolver(id) {
+  async function devolver(id) {
     // aponta pro endpoint de devolucao (que no backend esta como GET, veja o bug la)
-    get(`/emprestimos/${id}/devolver`).then(carregar)
+    setErro('')
+
+    try {
+      await get(`/emprestimos/${id}/devolver`)
+      await carregar()
+    } catch (error) {
+      setErro(error.message)
+    }
   }
 
   return (
     <div>
       <h1>Emprestimos</h1>
       <form className="card" onSubmit={handleSubmit}>
-        {erro && <p className="form-error" role="alert">{erro}</p>}
+        {erro && <p className="error-message" role="alert">{erro}</p>}
         <div className="field">
           <label>Livro</label>
           <select
