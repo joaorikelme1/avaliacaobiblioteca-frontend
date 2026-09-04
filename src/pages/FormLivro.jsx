@@ -7,6 +7,7 @@ export default function FormLivro() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ titulo: '', autor: '', isbn: '', quantidadeTotal: 1 })
   const [quantidadeEmprestada, setQuantidadeEmprestada] = useState(0)
+  const [erro, setErro] = useState('')
 
   useEffect(() => {
     if (id) {
@@ -21,15 +22,43 @@ export default function FormLivro() {
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
+    setErro('')
   }
 
   function handleSubmit(e) {
     e.preventDefault()
-    // BUG: nao valida quantidadeTotal (aceita negativo ou vazio) antes de enviar
+
+    const titulo = String(form.titulo ?? '').trim()
+    const autor = String(form.autor ?? '').trim()
+    const quantidadeTotal = Number(form.quantidadeTotal)
+
+    if (!titulo || !autor) {
+      setErro('Título e autor são obrigatórios.')
+      return
+    }
+
+    if (form.quantidadeTotal == null || form.quantidadeTotal === '' || !Number.isInteger(quantidadeTotal) || quantidadeTotal < 0) {
+      setErro('A quantidade total deve ser um número inteiro maior ou igual a zero.')
+      return
+    }
+
+    if (quantidadeTotal < quantidadeEmprestada) {
+      setErro(`A quantidade total não pode ser menor que ${quantidadeEmprestada}, pois existem exemplares emprestados.`)
+      return
+    }
+
+    const dadosLivro = {
+      ...form,
+      titulo,
+      autor,
+      isbn: String(form.isbn ?? '').trim(),
+      quantidadeTotal,
+    }
+
     if (id) {
-      put(`/livros/${id}`, form).then(() => navigate('/livros'))
+      put(`/livros/${id}`, dadosLivro).then(() => navigate('/livros'))
     } else {
-      post('/livros', form).then(() => navigate('/livros'))
+      post('/livros', dadosLivro).then(() => navigate('/livros'))
     }
   }
 
@@ -37,13 +66,14 @@ export default function FormLivro() {
     <div>
       <h1>{id ? 'Editar Livro' : 'Novo Livro'}</h1>
       <form className="card" onSubmit={handleSubmit}>
+        {erro && <p className="form-error" role="alert">{erro}</p>}
         <div className="field">
           <label>Titulo</label>
-          <input name="titulo" value={form.titulo} onChange={handleChange} />
+          <input name="titulo" value={form.titulo} onChange={handleChange} required />
         </div>
         <div className="field">
           <label>Autor</label>
-          <input name="autor" value={form.autor} onChange={handleChange} />
+          <input name="autor" value={form.autor} onChange={handleChange} required />
         </div>
         <div className="field">
           <label>ISBN</label>
@@ -55,8 +85,10 @@ export default function FormLivro() {
             type="number"
             name="quantidadeTotal"
             min={quantidadeEmprestada}
+            step="1"
             value={form.quantidadeTotal}
             onChange={handleChange}
+            required
           />
         </div>
         <button type="submit">Salvar</button>

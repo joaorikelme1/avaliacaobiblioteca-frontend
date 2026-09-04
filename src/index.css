@@ -31,3 +31,4 @@ input, select {
 .stat { font-size: 28px; font-weight: 700; }
 form .field { margin-bottom: 14px; }
 label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 14px; }
+.form-error { color: #b91c1c; margin-top: 0; font-weight: 600; }
