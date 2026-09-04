@@ -6,10 +6,16 @@ export default function FormLivro() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [form, setForm] = useState({ titulo: '', autor: '', isbn: '', quantidadeTotal: 1 })
+  const [quantidadeEmprestada, setQuantidadeEmprestada] = useState(0)
 
   useEffect(() => {
     if (id) {
-      get(`/livros/${id}`).then(setForm)
+      get(`/livros/${id}`).then((livro) => {
+        setForm(livro)
+        setQuantidadeEmprestada(
+          Math.max(0, Number(livro.quantidadeTotal) - Number(livro.quantidadeDisponivel))
+        )
+      })
     }
   }, [id])
 
@@ -45,7 +51,13 @@ export default function FormLivro() {
         </div>
         <div className="field">
           <label>Quantidade total</label>
-          <input type="number" name="quantidadeTotal" value={form.quantidadeTotal} onChange={handleChange} />
+          <input
+            type="number"
+            name="quantidadeTotal"
+            min={quantidadeEmprestada}
+            value={form.quantidadeTotal}
+            onChange={handleChange}
+          />
         </div>
         <button type="submit">Salvar</button>
       </form>
